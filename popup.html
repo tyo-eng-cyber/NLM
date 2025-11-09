@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>テキスト選択</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      width: 250px; /* ポップアップの幅 */
+      padding: 10px;
+    }
+    h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #e0e0e0;
+    }
+    .options-button {
+      background-color: #e7e7e7;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h3>送信するテキストを選択</h3>
+  
+  <div id="button-container">
+    <!-- ボタンはここに動的に生成されます -->
+  </div>
+
+  <hr>
+  
+  <div id="options-container">
+      <!-- オプションボタンはここに動的に生成されます -->
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

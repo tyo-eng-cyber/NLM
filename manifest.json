@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "NotebookLM クイック送信",
+  "version": "1.0",
+  "description": "NotebookLMのチャット入力欄に特定のテキストを入力して送信します。",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://notebooklm.google.com/"
+  ],
+  "options_page": "options.html",
+  "action": {
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    },
+    "default_title": "NotebookLMにテキスト送信",
+    "default_popup": "popup.html" 
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
+  }
+}
