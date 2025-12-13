@@ -20,11 +20,16 @@ const defaultValues = {
 この研究が、既存の関連研究と比べて新しい点（新規性や貢献）は何ですか？`,
     prompt3: `これらの資料全体で共通して述べられている主要なテーマやトピックを3つ挙げてください。
 すべての資料の中で、最も重要なポイントや結論は何ですか？ 箇条書きで示してください。`
+  },
+  autoExecutes: {
+    autoExecute1: true,
+    autoExecute2: true,
+    autoExecute3: true
   }
 };
 
 // 送信処理を行う関数
-function sendTextToNotebookLM(text) {
+function sendTextToNotebookLM(text, autoExecute) {
   // 1. 現在アクティブで、NotebookLMのタブを検索
   chrome.tabs.query({ active: true, url: "https://notebooklm.google.com/*" }, (tabs) => {
     if (tabs.length === 0) {
@@ -43,7 +48,8 @@ function sendTextToNotebookLM(text) {
       // 3. content.js の実行後、メッセージを送信
       chrome.tabs.sendMessage(targetTab.id, {
         action: "sendText",
-        text: text
+        text: text,
+        autoExecute: autoExecute
       }, (response) => {
         if (chrome.runtime.lastError) {
           console.error(chrome.runtime.lastError.message);
@@ -67,16 +73,19 @@ function setupButtons() {
     const buttonCount = items.buttonCount;
     const titles = items.titles;
     const prompts = items.prompts;
+    const autoExecutes = items.autoExecutes || defaultValues.autoExecutes || {};
 
     for (let i = 1; i <= buttonCount; i++) {
       const title = titles['title' + i];
       const prompt = prompts['prompt' + i];
+      // undefinedの場合はデフォルトtrue
+      const autoExecute = (autoExecutes['autoExecute' + i] !== undefined) ? autoExecutes['autoExecute' + i] : true;
 
       if (title && prompt) {
         const button = document.createElement('button');
         button.id = 'btn-text' + i;
         button.textContent = title;
-        button.addEventListener('click', () => sendTextToNotebookLM(prompt));
+        button.addEventListener('click', () => sendTextToNotebookLM(prompt, autoExecute));
         buttonContainer.appendChild(button);
       }
     }

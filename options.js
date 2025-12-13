@@ -20,6 +20,11 @@ const defaultValues = {
 この研究が、既存の関連研究と比べて新しい点（新規性や貢献）は何ですか？`,
     prompt3: `これらの資料全体で共通して述べられている主要なテーマやトピックを3つ挙げてください。
 すべての資料の中で、最も重要なポイントや結論は何ですか？ 箇条書きで示してください。`
+  },
+  autoExecutes: {
+    autoExecute1: true,
+    autoExecute2: true,
+    autoExecute3: true
   }
 };
 
@@ -28,17 +33,20 @@ function saveOptions() {
   const buttonCount = parseInt(document.getElementById('buttonCount').value, 10);
   const titles = {};
   const prompts = {};
+  const autoExecutes = {};
 
   for (let i = 1; i <= buttonCount; i++) {
     titles['title' + i] = document.getElementById('title' + i).value;
     prompts['prompt' + i] = document.getElementById('prompt' + i).value;
+    autoExecutes['autoExecute' + i] = document.getElementById('autoExecute' + i).checked;
   }
 
   chrome.storage.sync.set(
     {
       buttonCount: buttonCount,
       titles: titles,
-      prompts: prompts
+      prompts: prompts,
+      autoExecutes: autoExecutes
     },
     () => {
       // 保存成功のメッセージを表示
@@ -56,12 +64,12 @@ function restoreOptions() {
   chrome.storage.sync.get(defaultValues, (items) => {
     const buttonCount = items.buttonCount;
     document.getElementById('buttonCount').value = buttonCount;
-    generatePromptFields(buttonCount, items.titles, items.prompts);
+    generatePromptFields(buttonCount, items.titles, items.prompts, items.autoExecutes);
   });
 }
 
 // ボタンの数に応じてプロンプト設定の入力欄を生成する関数
-function generatePromptFields(count, titles, prompts) {
+function generatePromptFields(count, titles, prompts, autoExecutes) {
   const container = document.getElementById('promptsContainer');
   container.innerHTML = ''; // コンテナをクリア
 
@@ -90,6 +98,28 @@ function generatePromptFields(count, titles, prompts) {
     group.appendChild(titleInput);
     group.appendChild(promptLabel);
     group.appendChild(promptTextarea);
+
+    const autoExecuteLabel = document.createElement('label');
+    autoExecuteLabel.style.display = 'flex';
+    autoExecuteLabel.style.alignItems = 'center';
+    autoExecuteLabel.style.marginTop = '5px';
+
+    const autoExecuteInput = document.createElement('input');
+    autoExecuteInput.type = 'checkbox';
+    autoExecuteInput.id = 'autoExecute' + i;
+    // デフォルトはtrue (undefinedの場合もtrue扱いにするかは要検討だが、初期値defaultValuesでカバー)
+    if (autoExecutes && autoExecutes['autoExecute' + i] !== undefined) {
+      autoExecuteInput.checked = autoExecutes['autoExecute' + i];
+    } else {
+      autoExecuteInput.checked = true; // 新規追加時はデフォルトON
+    }
+
+    const autoExecuteText = document.createTextNode(' 自動送信する（チェックを外すと入力のみ行います）');
+
+    autoExecuteLabel.appendChild(autoExecuteInput);
+    autoExecuteLabel.appendChild(autoExecuteText);
+    group.appendChild(autoExecuteLabel);
+
     container.appendChild(group);
   }
 }
@@ -107,19 +137,23 @@ document.getElementById('buttonCount').addEventListener('change', (event) => {
   chrome.storage.sync.get(defaultValues, (items) => {
     const currentTitles = {};
     const currentPrompts = {};
+    const currentAutoExecutes = {};
     const existingFields = document.querySelectorAll('.prompt-group input, .prompt-group textarea');
     existingFields.forEach(field => {
       if (field.id.startsWith('title')) {
         currentTitles[field.id] = field.value;
       } else if (field.id.startsWith('prompt')) {
         currentPrompts[field.id] = field.value;
+      } else if (field.id.startsWith('autoExecute')) {
+        currentAutoExecutes[field.id] = field.checked;
       }
     });
-    
+
     // 保存されている値と現在の入力値をマージ
     const titles = { ...items.titles, ...currentTitles };
     const prompts = { ...items.prompts, ...currentPrompts };
+    const autoExecutes = { ...items.autoExecutes, ...currentAutoExecutes };
 
-    generatePromptFields(count, titles, prompts);
+    generatePromptFields(count, titles, prompts, autoExecutes);
   });
 });
