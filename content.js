@@ -1,29 +1,29 @@
 // content.js
 
-// メッセージリスナーを設定
-// popup.js から { action: "sendText", text: "..." } というメッセージを受け取る
+// メッセージリスナー
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "sendText") {
-    const textToInput = request.text;
-    
-    // --- 以前の処理（テキスト入力と送信）を関数化 ---
-    const result = executeSend(textToInput);
-    
-    if (result.success) {
-      sendResponse({ status: "success" });
-    } else {
-      sendResponse({ status: "error", message: result.message });
-    }
+    // 非同期で実行
+    (async () => {
+      try {
+        const result = await executeSend(request.text);
+        if (result.success) {
+          sendResponse({ status: "success" });
+        } else {
+          sendResponse({ status: "error", message: result.message });
+        }
+      } catch (e) {
+        console.error("Unexpected error:", e);
+        sendResponse({ status: "error", message: e.toString() });
+      }
+    })();
+    return true; // async wait
   }
-  // true を返すことで、sendResponse を非同期で待機させる
-  return true;
 });
 
-
-// テキスト入力と送信を実行するメインの関数
-function executeSend(textToInput) {
-  
-  // --- 入力欄セレクタ (以前のまま) ---
+// メイン処理
+async function executeSend(textToInput) {
+  // 1. 入力欄を探す
   const textareaSelectors = [
     'textarea[aria-label="クエリボックス"]',
     'textarea[aria-label="Prompt input"]',
@@ -33,7 +33,8 @@ function executeSend(textToInput) {
     'textarea[placeholder="メッセージを送信..."]',
     'textarea[placeholder="Send a message..."]',
     'textarea[placeholder*="メッセージ"]',
-    'textarea[role="textbox"]'
+    'textarea[role="textbox"]',
+    'div[role="main"] textarea'
   ];
 
   let textarea = null;
@@ -43,71 +44,86 @@ function executeSend(textToInput) {
   }
 
   if (!textarea) {
-    console.error("NotebookLMの入力欄が見つかりません。");
-    return { success: false, message: "NotebookLMの入力欄（textarea）が見つかりませんでした。" };
+    return { success: false, message: "入力欄が見つかりません" };
   }
-  
-  // --- 送信ボタンセレクタ (以前のまま) ---
+
+  // 2. テキスト入力 (防御的プログラミング)
+  try {
+    // まずは従来の単純な方法 (ユーザー曰くこれは動いていた)
+    textarea.focus();
+    if (textarea.disabled) textarea.disabled = false;
+    textarea.value = textToInput;
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Reactの状態更新を確実にするための追加処置 (念のため)
+    // エラーが出ても止まらないようにtry-catch個別に囲むか、ここでのエラーは無視して進む
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+    if (nativeSetter) {
+      nativeSetter.call(textarea, textToInput);
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  } catch (e) {
+    console.error("Input failed partially:", e);
+    // 最低限のフォールバック
+    textarea.value = textToInput;
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  // UI反映待ち
+  await new Promise(r => setTimeout(r, 200));
+
+  // 3. 送信実行
+
+  // A. 送信ボタンを探してクリック
   const buttonSelectors = [
     'button[aria-label="Send message"]',
     'button[aria-label="メッセージを送信"]',
     'button[aria-label="送信"]',
     'button[aria-label*="Send"]',
-    'button[aria-label*="送信"]'
+    'button[aria-label*="送信"]',
+    'button:has(svg)', // アイコンボタン
+    'button:has(mat-icon)'
   ];
-  
+
   let submitButton = null;
-  for (const selector of buttonSelectors) {
-    const button = document.querySelector(selector);
-    if (button && button.tagName === 'BUTTON') {
-        submitButton = button;
-        break;
+  // 親要素等から探索
+  const form = textarea.closest('form') || textarea.closest('div[role="main"]') || document.body;
+
+  // フォーム内、または近くのボタンを優先探索
+  for (const sel of buttonSelectors) {
+    const btn = form.querySelector(sel);
+    if (btn && !btn.disabled && btn.offsetParent !== null) {
+      submitButton = btn;
+      break;
     }
   }
 
-  if (!submitButton) {
-    // 隣接するボタンを探す
-    let sibling = textarea.nextElementSibling;
-    if (sibling && sibling.tagName === 'BUTTON') {
-      submitButton = sibling;
-    } else if (textarea.parentElement && textarea.parentElement.nextElementSibling && textarea.parentElement.nextElementSibling.tagName === 'BUTTON') {
-      submitButton = textarea.parentElement.nextElementSibling;
-    } else if (textarea.closest('div')?.nextElementSibling?.tagName === 'BUTTON') {
-        submitButton = textarea.closest('div').nextElementSibling;
-    }
+  if (submitButton) {
+    submitButton.click();
+    return { success: true, message: "ボタンをクリックしました" };
   }
 
-  if (!submitButton) {
-    console.error("NotebookLMの送信ボタンが見つかりません。");
-    return { success: false, message: "NotebookLMの送信ボタンが見つかりませんでした。" };
-  }
+  // B. ボタンが見つからない/押せない場合は Enter キー送信
+  console.log("Submit button not found or disabled. Trying Enter key.");
+  const enterEvent = new KeyboardEvent('keydown', {
+    key: 'Enter',
+    code: 'Enter',
+    keyCode: 13,
+    which: 13,
+    bubbles: true,
+    cancelable: true
+  });
+  textarea.dispatchEvent(enterEvent);
 
-  // 1. テキスト入力
-  if (textarea.disabled) {
-    textarea.disabled = false;
-  }
-  textarea.value = textToInput;
+  // キーアップも送信
+  textarea.dispatchEvent(new KeyboardEvent('keyup', {
+    key: 'Enter',
+    code: 'Enter',
+    keyCode: 13,
+    which: 13,
+    bubbles: true,
+    cancelable: true
+  }));
 
-  // 2. 入力イベント発火
-  const inputEvent = new Event('input', { bubbles: true, cancelable: true });
-  textarea.dispatchEvent(inputEvent);
-
-  // 3. 送信ボタンクリック
-  setTimeout(() => {
-    if (!submitButton.disabled) {
-      submitButton.click();
-    } else {
-      // ボタンがまだ無効な場合、再度イベントを発火させて試みる
-      textarea.dispatchEvent(inputEvent);
-      setTimeout(() => {
-        if (!submitButton.disabled) {
-          submitButton.click();
-        } else {
-          console.error("送信ボタンが押せない状態です。");
-        }
-      }, 100);
-    }
-  }, 100);
-
-  return { success: true };
+  return { success: true, message: "Enterキー送信を実行しました" };
 }
