@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "NotebookLM クイック入力",
   "version": "1.0",
-  "description": "NotebookLMのチャット欄に特定のプロンプトを入力・送信します。",
+  "description": "NotebookLMのチャットに事前設定したプロンプトをクイックに入力・送信します。",
   "permissions": [
     "activeTab",
     "scripting",
