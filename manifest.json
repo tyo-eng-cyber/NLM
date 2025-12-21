@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "NotebookLM クイック送信",
-  "version": "1.2",
-  "description": "NotebookLMのチャット入力欄に特定のテキストを入力して送信します。",
+  "name": "NotebookLM クイック入力",
+  "version": "1.0",
+  "description": "NotebookLMのチャット欄に特定のプロンプトを入力・送信します。",
   "permissions": [
     "activeTab",
     "scripting",
@@ -18,7 +18,7 @@
       "48": "images/icon48.png",
       "128": "images/icon128.png"
     },
-    "default_title": "NotebookLMにテキスト送信",
+    "default_title": "NotebookLMにプロンプト入力",
     "default_popup": "popup.html" 
   },
   "background": {

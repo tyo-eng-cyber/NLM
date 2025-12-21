@@ -53,7 +53,7 @@ if (!window.NLM_CONTENT_SCRIPT_LOADED) {
 
     // 2. テキスト入力 (防御的プログラミング)
     try {
-      // まずは従来の単純な方法 (ユーザー曰くこれは動いていた)
+      // まずは従来の単純な方法
       textarea.focus();
       if (textarea.disabled) textarea.disabled = false;
       textarea.value = textToInput;
