@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "NotebookLM クイック入力",
-  "version": "1.0",
+  "version": "1.1",
   "description": "NotebookLMのチャットに事前設定したプロンプトをクイックに入力・送信します。",
   "permissions": [
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://notebooklm.google.com/"
@@ -23,6 +24,36 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "commands": {
+    "prompt-button-1": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+1",
+        "mac": "Command+Shift+1"
+      },
+      "description": "ボタン1のプロンプトを入力・送信"
+    },
+    "prompt-button-2": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+2",
+        "mac": "Command+Shift+2"
+      },
+      "description": "ボタン2のプロンプトを入力・送信"
+    },
+    "prompt-button-3": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+3",
+        "mac": "Command+Shift+3"
+      },
+      "description": "ボタン3のプロンプトを入力・送信"
+    },
+    "prompt-button-4": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+4",
+        "mac": "Command+Shift+4"
+      },
+      "description": "ボタン4のプロンプトを入力・送信"
+    }
   },
   "icons": {
     "16": "images/icon16.png",
